@@ -1,4 +1,19 @@
 services:
+
+  api:
+    build: .
+    container_name: digital_hunter_api
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3311
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=digital_hunter
+    depends_on:
+      - mysql
+
   mysql:
     image: mysql:8.0
     container_name: mysql
