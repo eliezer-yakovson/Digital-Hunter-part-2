@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException
 import mysql.connector
 import os
-import math
+
+from DigitalHunter_map import plot_map_with_geometry
 
 app = FastAPI()
 
@@ -13,23 +14,6 @@ def get_db_connection():
         password=os.getenv("DB_PASSWORD", "root"),
         database=os.getenv("DB_NAME", "digital_hunter")
     )
-    
-def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Calculate the great-circle distance in km between two points on Earth."""
-    EARTH_RADIUS_KM = 6371.0
-
-    lat1_rad = math.radians(lat1)
-    lat2_rad = math.radians(lat2)
-    delta_lat = math.radians(lat2 - lat1)
-    delta_lon = math.radians(lon2 - lon1)
-
-    a = (
-        math.sin(delta_lat / 2) ** 2
-        + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon / 2) ** 2
-    )
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-    return EARTH_RADIUS_KM * c
 
 @app.get("/movement_alert")
 def movement_alert():
@@ -132,6 +116,31 @@ def get_awakened_sleeper_cells():
     finally:
         cursor.close()
         conn.close()
+        
+@app.get("/coordinate_motion_graph/{id}")        
+def coordinate_motion_graph(id):
+    conn=get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        query = '''
+            SELECT reported_lon, reported_lat
+            FROM intel_signals
+            WHERE entity_id =%s
+            ORDER BY timestamp ASC
+        '''
+        cursor.execute(query,(id,))
+        results = cursor.fetchall()
+        coords_list = [(row['reported_lon'], row['reported_lat']) for row in results]
+        plot_map_with_geometry(coords_list)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
+    finally:
+        cursor.close() 
+        conn.close()
+              
+        
+
 
 if __name__ == "__main__":
     import uvicorn
