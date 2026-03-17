@@ -32,3 +32,23 @@ def movement_alert():
         cursor.close
         conn.close
         
+@app.get("/intel_signals/aggregation")
+def signal_type_sorted():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        query = '''
+            SELECT signal_type, COUNT(*) AS count
+            FROM intel_signals
+            GROUP BY signal_type
+            ORDER BY count DESC
+            '''
+        cursor.execute(query)
+        results = cursor.fetchall
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail= str(e))
+    finally:
+        cursor.close
+        conn.close
+        
